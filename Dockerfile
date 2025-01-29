@@ -1,7 +1,7 @@
-# Використання повного Node.js образу
-FROM node:23.3.0 AS builder
+# Використовуємо останню доступну стабільну версію Node.js (повний образ, не slim)
+FROM node:23.3.0
 
-# Включення Corepack для підтримки pnpm
+# Увімкнення corepack (управління pnpm) та встановлення pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Встановлення pnpm глобально
