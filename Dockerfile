@@ -1,77 +1,59 @@
-# Use a specific Node.js version for better reproducibility
-FROM node:23.3.0-slim AS builder
+# Використання повного Node.js образу
+FROM node:23.3.0 AS builder
 
-# Enable corepack for pnpm management
+# Включення Corepack для підтримки pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install pnpm globally and necessary build tools
-RUN npm install -g pnpm@9.4.0 && \
-    apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y \
-        git \
-        python3 \
-        python3-pip \
-        curl \
-        node-gyp \
-        ffmpeg \
-        libtool-bin \
-        autoconf \
-        automake \
-        libopus-dev \
-        make \
-        g++ \
-        build-essential \
-        libcairo2-dev \
-        libjpeg-dev \
-        libpango1.0-dev \
-        libgif-dev \
-        openssl \
-        libssl-dev && \
+# Встановлення pnpm глобально
+RUN npm install -g pnpm@9.4.0
+
+# Оновлення apt та встановлення необхідних пакетів
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    ffmpeg \
+    gnupg2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set Python 3 as the default python
+# Встановлення Python 3 як основного
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
-# Set the working directory
+# Створення робочої папки
 WORKDIR /app
 
-# Copy application code
+# Копіюємо код додатку
 COPY . .
 
-# Install dependencies with hoisting
+# Встановлення залежностей
 RUN pnpm install --shamefully-hoist --no-frozen-lockfile
 
-# Build the project
+# Збірка проєкту
 RUN pnpm run build && pnpm prune --prod
 
-# Final runtime image
-FROM node:23.3.0-slim
+# Фінальний образ (легший)
+FROM node:23.3.0
 
-# Enable corepack for pnpm in runtime
+# Включення Corepack для підтримки pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install runtime dependencies
-RUN npm install -g pnpm@9.4.0 && \
-    apt-get update && \
-    apt-get install -y \
-        git \
-        python3 \
-        ffmpeg && \
+# Встановлення pnpm глобально
+RUN npm install -g pnpm@9.4.0
+
+# Встановлення тільки необхідних пакетів для рантайму
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    ffmpeg && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
+# Встановлення робочої директорії
 WORKDIR /app
 
-# Copy built artifacts and production dependencies from the builder stage
+# Копіюємо зібраний код і залежності
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/eslint.config.mjs ./
-COPY --from=builder /app/.eslintrc.json ./
-COPY --from=builder /app/.npmrc ./
-COPY --from=builder /app/turbo.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/agent ./agent
 COPY --from=builder /app/client ./client
@@ -80,8 +62,8 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/characters ./characters
 
-# Expose necessary ports
+# Відкриття портів
 EXPOSE 3000 5173
 
-# Command to start the application
+# Запуск додатку
 CMD ["sh", "-c", "pnpm start --character=characters/my-character.character.json & pnpm start:client"]
