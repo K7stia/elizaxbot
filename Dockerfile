@@ -1,6 +1,9 @@
 # Use a specific Node.js version for better reproducibility
 FROM node:23.3.0-slim AS builder
 
+# Enable corepack for pnpm management
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Install pnpm globally and necessary build tools
 RUN npm install -g pnpm@9.4.0 && \
     apt-get update && \
@@ -37,14 +40,17 @@ WORKDIR /app
 # Copy application code
 COPY . .
 
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
+# Install dependencies with hoisting
+RUN pnpm install --shamefully-hoist --no-frozen-lockfile
 
 # Build the project
 RUN pnpm run build && pnpm prune --prod
 
 # Final runtime image
 FROM node:23.3.0-slim
+
+# Enable corepack for pnpm in runtime
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Install runtime dependencies
 RUN npm install -g pnpm@9.4.0 && \
@@ -78,4 +84,4 @@ COPY --from=builder /app/characters ./characters
 EXPOSE 3000 5173
 
 # Command to start the application
-CMD ["sh", "-c", "pnpm start & pnpm start:client"]
+CMD ["sh", "-c", "pnpm start --character=characters/my-character.character.json & pnpm start:client"]
