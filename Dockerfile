@@ -19,8 +19,11 @@ RUN pnpm build
 # Копіюємо змінні середовища (якщо їх немає в репозиторії, додайте їх вручну!)
 COPY .env.example .env
 
-# Відкриваємо необхідні порти
-EXPOSE 3000 5173
+# Відкриваємо необхідні порти (5173)
+EXPOSE 3000 
+
+ENV PORT=3000
 
 # Запускаємо сервер та клієнт
-CMD ["sh", "-c", "pnpm start --character=characters/my-character.character.json & pnpm start:client"]
+CMD ["sh", "-c", "pnpm start --port=$PORT --character=characters/my-character.character.json & sleep 2 && pnpm start:client --port=$PORT"]
+
