@@ -26,4 +26,3 @@ ENV PORT=3000
 
 # Запускаємо сервер та клієнт
 CMD ["sh", "-c", "pnpm start --port=$PORT --character=characters/my-character.character.json & sleep 2 && pnpm start:client --port=$PORT"]
-
