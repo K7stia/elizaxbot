@@ -11,7 +11,14 @@ WORKDIR /app
 COPY . .
 
 # Встановлюємо залежності з правильним режимом
+# Install dependencies with hoisting
 RUN pnpm install --shamefully-hoist --no-frozen-lockfile
+
+# Оновлення ts-node та перевірка безпеки
+RUN pnpm update ts-node && pnpm audit --fix || true
+
+# Build the project
+RUN pnpm run build && pnpm prune --prod
 
 # Будуємо проєкт
 RUN pnpm build
